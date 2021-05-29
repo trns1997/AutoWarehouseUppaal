@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
+<nta>
+	<declaration>// Place global declarations here.
+chan pod_ready, pod_send_back, task_consumed;
+
+int hSize, vSize;
+int grid[hSize][vSize];
+int numOfPods := 20;</declaration>
+	<template>
+		<name x="5" y="5">Robot</name>
+		<parameter>int robotID, int K</parameter>
+		<declaration>// Place local declarations here.</declaration>
+		<location id="id0" x="-612" y="-909">
+			<name x="-622" y="-943">Idle</name>
+		</location>
+		<location id="id1" x="-170" y="-1020">
+			<name x="-161" y="-994">stop</name>
+		</location>
+		<location id="id2" x="-178" y="-1360">
+			<name x="-188" y="-1394">moveUp</name>
+		</location>
+		<location id="id3" x="-161" y="-722">
+			<name x="-195" y="-697">moveDown</name>
+		</location>
+		<location id="id4" x="212" y="-1037">
+			<name x="202" y="-1071">moveRight</name>
+		</location>
+		<location id="id5" x="-535" y="-1028">
+			<name x="-586" y="-1071">moveLeft</name>
+		</location>
+		<init ref="id0"/>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id0"/>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id1"/>
+			<nail x="-289" y="-841"/>
+		</transition>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id1"/>
+			<nail x="42" y="-943"/>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id1"/>
+			<nail x="-34" y="-1190"/>
+		</transition>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id1"/>
+			<nail x="-357" y="-1139"/>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id3"/>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id4"/>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id2"/>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id5"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id1"/>
+			<nail x="-348" y="-918"/>
+		</transition>
+	</template>
+	<template>
+		<name>Human</name>
+		<parameter>int H</parameter>
+		<declaration>// Machine Clocks
+clock time_for_task;
+</declaration>
+		<location id="id6" x="-76" y="-289">
+			<name x="-86" y="-323">wait</name>
+		</location>
+		<location id="id7" x="-75" y="-119">
+			<name x="-109" y="-102">pod_arrived</name>
+			<label kind="invariant" x="-136" y="-85">time_for_task &lt;= H</label>
+		</location>
+		<init ref="id6"/>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id6"/>
+			<label kind="guard" x="-331" y="-204">time_for_task &gt;= H</label>
+			<label kind="synchronisation" x="-314" y="-187">pod_send_back!</label>
+			<nail x="-195" y="-195"/>
+		</transition>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id7"/>
+			<label kind="synchronisation" x="-68" y="-221">pod_ready?</label>
+		</transition>
+	</template>
+	<template>
+		<name>Pod</name>
+		<location id="id8" x="-127" y="-263">
+			<name x="-137" y="-297">Init</name>
+		</location>
+		<location id="id9" x="-212" y="-170">
+			<name x="-246" y="-153">pod_picked</name>
+		</location>
+		<location id="id10" x="-34" y="-170">
+			<name x="-93" y="-153">pod_delivered_human</name>
+		</location>
+		<init ref="id8"/>
+		<transition>
+			<source ref="id10"/>
+			<target ref="id8"/>
+		</transition>
+		<transition>
+			<source ref="id9"/>
+			<target ref="id10"/>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id9"/>
+		</transition>
+	</template>
+	<template>
+		<name>TaskQueue</name>
+		<parameter>int MAX_T, int T</parameter>
+		<declaration>int num_task := 0;
+clock taskGenClock;
+
+int queue[MAX_T];
+int head, tail;
+
+void add_new_task(){
+    int randomPod = random(numOfPods);
+    queue[tail] = randomPod;
+    if(tail == MAX_T - 1){
+        tail := 0;
+    }
+    else{
+        tail += 1;
+    }
+    num_task += 1;
+}
+
+void rm_task(){
+    if(head == MAX_T - 1){
+        head := 0;
+    }
+    else{
+        head += 1;
+    }
+    num_task -= 1;
+}</declaration>
+		<location id="id11" x="-144" y="-255">
+			<name x="-170" y="-314">no_item</name>
+			<label kind="invariant" x="-170" y="-289">taskGenClock &lt;= T</label>
+		</location>
+		<location id="id12" x="-272" y="-144">
+			<name x="-331" y="-127">item_added</name>
+		</location>
+		<location id="id13" x="0" y="-144">
+			<name x="-25" y="-127">item_removed</name>
+		</location>
+		<init ref="id11"/>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id11"/>
+			<label kind="synchronisation" x="-68" y="-221">num_task == 0</label>
+		</transition>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id12"/>
+			<label kind="guard" x="-187" y="-34">taskGenClock &gt;= T &amp;&amp; num_task &lt; MAX_T</label>
+			<label kind="assignment" x="-187" y="-76">add_new_task(),
+taskGenClock = 0</label>
+			<nail x="-136" y="-85"/>
+		</transition>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id13"/>
+			<label kind="guard" x="119" y="-153">num_task &gt; 0</label>
+			<label kind="synchronisation" x="119" y="-187">task_consumed?</label>
+			<label kind="assignment" x="119" y="-170">rm_task()</label>
+			<nail x="59" y="-187"/>
+			<nail x="110" y="-144"/>
+		</transition>
+		<transition>
+			<source ref="id12"/>
+			<target ref="id12"/>
+			<label kind="guard" x="-688" y="-153">taskGenClock &gt;= T &amp;&amp; num_task &lt; MAX_T</label>
+			<label kind="assignment" x="-688" y="-187">add_new_task(),
+taskGenClock = 0</label>
+			<nail x="-323" y="-187"/>
+			<nail x="-374" y="-144"/>
+		</transition>
+		<transition>
+			<source ref="id12"/>
+			<target ref="id13"/>
+			<label kind="synchronisation" x="-195" y="-170">task_consumed?</label>
+			<label kind="assignment" x="-195" y="-144">rm_task()</label>
+		</transition>
+		<transition>
+			<source ref="id11"/>
+			<target ref="id12"/>
+			<label kind="guard" x="-348" y="-221">taskGenClock &gt;= T</label>
+			<label kind="assignment" x="-348" y="-263">add_new_task(),
+taskGenClock = 0</label>
+		</transition>
+	</template>
+	<system>// Place template instantiations here.
+Process = Template();
+// List one or more processes to be composed into a system.
+system Process;
+    </system>
+	<queries>
+		<query>
+			<formula></formula>
+			<comment></comment>
+		</query>
+	</queries>
+</nta>
