@@ -4,11 +4,11 @@
 	<declaration>// Place global declarations here.
 const int numRobots = 3;
 const int numPods = 3;
-const int K = 2;
-const int MAX_T = 10;
 typedef int[0,numRobots-1] robot_id_t;
 typedef int[0,numPods-1] pod_id_t;
 
+const int K = 2;
+const int MAX_T = 10;
 int podPoses[numPods][2] = {
     {3, 2},
     {4, 2},
@@ -162,7 +162,7 @@ time_for_new_item = 0</label>
 	</template>
 	<template>
 		<name x="5" y="5">Robot</name>
-		<parameter>const robot_id_t id , int K</parameter>
+		<parameter>const robot_id_t id</parameter>
 		<declaration>clock time_for_move;
 int podID;
 int r_x, r_y;</declaration>
@@ -305,7 +305,7 @@ time_for_move = 0</label>
 		<transition>
 			<source ref="id6"/>
 			<target ref="id6"/>
-			<label kind="guard" x="-390" y="-850">r_x &lt; podPoses[podID][0] &amp;&amp; time_for_move &gt;= K</label>
+			<label kind="guard" x="-399" y="-850">r_x &lt; podPoses[podID][0] &amp;&amp; time_for_move &gt;= K</label>
 			<label kind="assignment" x="-178" y="-833">r_x +=1,
 time_for_move = 0</label>
 			<nail x="-42" y="-884"/>
@@ -314,7 +314,7 @@ time_for_move = 0</label>
 		<transition>
 			<source ref="id7"/>
 			<target ref="id7"/>
-			<label kind="guard" x="535" y="-824">r_y &lt; podPoses[podID][1] &amp;&amp; time_for_move &gt;= K</label>
+			<label kind="guard" x="535" y="-807">r_y &lt; podPoses[podID][1] &amp;&amp; time_for_move &gt;= K</label>
 			<label kind="assignment" x="535" y="-841">r_y += 1,
 time_for_move = 0</label>
 			<nail x="518" y="-867"/>
@@ -416,7 +416,8 @@ time_for_move = 0</label>
 			<source ref="id3"/>
 			<target ref="id4"/>
 			<label kind="synchronisation" x="467" y="-603">robot_picked[id]?</label>
-			<label kind="assignment" x="467" y="-578">podID = taskFromQueue</label>
+			<label kind="assignment" x="467" y="-578">podID = taskFromQueue,
+time_for_move = 0</label>
 		</transition>
 	</template>
 	<template>
