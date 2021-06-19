@@ -15,6 +15,166 @@ int podPoses[numPods][2] = {
     {5, 2}
 };
 
+const int GRID_ROWS = 10;
+const int GRID_COLS = 10;
+const int EMPTY = 0;
+const int POD = 1;
+const int ROBOT = 2;
+const int POD_ROWS = (GRID_ROWS-2)/2;
+const int POD_COLS = (GRID_COLS-2);
+const int NUMPODS = POD_ROWS * POD_COLS;
+
+////////////////////////////////////////////////////////////////////////
+// PODS
+////////////////////////////////////////////////////////////////////////
+
+const int POD_IDLE = 0;    // @ its place in the grid, available for new tasks
+const int POD_TASK = 1;    // assigned to task
+const int POD_TAKEN = 2;   // assigned to task taken by robot 
+
+typedef int[POD_IDLE, POD_TAKEN] pod_status_t;
+
+// All the pods
+struct {
+    int id;                // pod id
+    int row, col;          // position in the grid
+    pod_status_t status;   // pod status
+} pods[NUMPODS] = {
+    // grid row 2
+    {  0, 2, 1, POD_IDLE},
+    {  1, 2, 2, POD_IDLE},
+    {  2, 2, 3, POD_IDLE},
+    {  3, 2, 4, POD_IDLE},
+    {  4, 2, 5, POD_IDLE},
+    {  5, 2, 6, POD_IDLE},
+    {  6, 2, 7, POD_IDLE},
+    {  7, 2, 8, POD_IDLE},
+    // grid row 4
+    {  8, 4, 1, POD_IDLE},
+    {  9, 4, 2, POD_IDLE},
+    { 10, 4, 3, POD_IDLE},
+    { 11, 4, 4, POD_IDLE},
+    { 12, 4, 5, POD_IDLE},
+    { 13, 4, 6, POD_IDLE},
+    { 14, 4, 7, POD_IDLE},
+    { 15, 4, 8, POD_IDLE},
+    // grid row 6
+    { 16, 6, 1, POD_IDLE},
+    { 17, 6, 2, POD_IDLE},
+    { 18, 6, 3, POD_IDLE},
+    { 19, 6, 4, POD_IDLE},
+    { 20, 6, 5, POD_IDLE},
+    { 21, 6, 6, POD_IDLE},
+    { 22, 6, 7, POD_IDLE},
+    { 23, 6, 8, POD_IDLE},
+    // grid row 8
+    { 24, 8, 1, POD_IDLE},
+    { 25, 8, 2, POD_IDLE},
+    { 26, 8, 3, POD_IDLE},
+    { 27, 8, 4, POD_IDLE},
+    { 28, 8, 5, POD_IDLE},
+    { 29, 8, 6, POD_IDLE},
+    { 30, 8, 7, POD_IDLE},
+    { 31, 8, 8, POD_IDLE}
+};
+
+////////////////////////////////////////////////////////////////////////
+// WAREHOUSE LAYOUT (GRID)
+////////////////////////////////////////////////////////////////////////
+
+int grid[GRID_ROWS][GRID_COLS] = {
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+};
+
+// Linear congruential random number generator:
+// cycle length = 255
+
+int seed = 1;
+
+int mini_rand()
+{
+    seed = 17 * seed + 137;
+    return seed &amp; 655355;
+}
+
+int task_queue[MAX_T];
+int task_queue_len = 0;
+
+// Put an element at the end of the queue
+bool enqueue_task(int pod)
+{
+    if (task_queue_len &lt; MAX_T) {
+        task_queue[task_queue_len++] = pod;
+        return true;
+    }
+    return false;
+}
+
+// Remove the front element of the queue
+// Return the pod ID
+int dequeue_task()
+{
+    int i, pod = -1;
+    if (task_queue_len &gt; 0) {
+        pod = task_queue[0];
+        for (i = 1; i &lt; task_queue_len; ++i)
+            task_queue[i-1] = task_queue[i];
+        task_queue[--task_queue_len] = 0;
+    }
+    return pod;
+}
+
+int count_idle_pods()
+{
+    int i, n;
+    for (i = n = 0; i &lt; NUMPODS; ++i)
+        if (pods[i].status == POD_IDLE)
+            ++n;
+    return n;
+}
+
+int select_random_idle_pod()
+{
+    int idlepods = count_idle_pods();
+    int pod = mini_rand() % idlepods;
+    int i;
+
+    for (i = 0; i &lt; NUMPODS; ++i) {
+        if (pods[i].status == POD_IDLE) {
+            if (pod == 0)
+                return i;
+            --pod;
+        }
+    }
+    return -1;
+}
+
+void add_new_task()
+{
+    // 1. select random idle pod
+    int pod;
+    int idlepods = count_idle_pods();
+
+    if (idlepods == 0)
+        return;
+
+    pod = select_random_idle_pod();
+
+    // 2. add pod to queue
+    
+    if (enqueue_task(pod))
+        pods[pod].status = POD_TASK;
+}
+
 int startingPose[2] = {0, 0};
 int deliveryPose[2] = {0, 9};
 int bottomLeftPose[2] = {9, 0};
@@ -166,19 +326,7 @@ time_for_new_item = 0</label>
 	<template>
 		<name>TempTaskManager</name>
 		<parameter>int T</parameter>
-		<declaration>clock task_clock;
-
-// Put an element at the end of the queue
-void enqueue()
-{
-        //todo
-}
-
-// Remove the front element of the queue
-void dequeue()
-{
-        //todo
-}</declaration>
+		<declaration>clock task_clock;</declaration>
 		<location id="id3" x="-34" y="-510">
 			<name x="-42" y="-561">Empty</name>
 			<label kind="invariant" x="-42" y="-544">task_clock&lt;=T</label>
@@ -221,7 +369,7 @@ dequeue()</label>
 			<label kind="guard" x="-433" y="-102">task_clock&gt;=T &amp;&amp; taskCounter&lt;MAX_T</label>
 			<label kind="assignment" x="-272" y="-85">taskCounter++,
 task_clock=0,
-enqueue()</label>
+add_new_task()</label>
 			<nail x="-102" y="-51"/>
 			<nail x="-161" y="-102"/>
 		</transition>
@@ -250,7 +398,7 @@ dequeue()</label>
 			<label kind="guard" x="-340" y="-408">task_clock &gt;= T</label>
 			<label kind="assignment" x="-340" y="-391">taskCounter++,
 task_clock=0,
-enqueue()</label>
+add_new_task()</label>
 			<nail x="-212" y="-382"/>
 		</transition>
 	</template>
@@ -519,8 +667,14 @@ time_for_move = 0</label>
 		<parameter>int K</parameter>
 		<declaration>clock robot_clock;
 
-void pickTask(){
+int mypod_id;
+int my_row, my_col;
+int pod_row, pod_col;
 
+void pickTask(){
+    mypod_id = dequeue_task();
+    pod_row = pods[mypod_id].row;
+    pod_col = pods[mypod_id].col;
 }
 
 void moveToPod(){
