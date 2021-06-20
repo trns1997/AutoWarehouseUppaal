@@ -2,7 +2,7 @@
 <!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
 <nta>
 	<declaration>// Place global declarations here.
-const int numRobots = 3;
+const int numRobots = 1;
 const int numPods = 3;
 typedef int[0,numRobots-1] robot_id_t;
 //typedef int[0,numPods-1] pod_id_t;
@@ -339,12 +339,17 @@ void returnToPod(){
         moveTo(my_row, my_col-1);
     } else if (my_col == 0 &amp;&amp; my_row &lt; pod_row+1) {
         moveTo(my_row+1, my_col);
-    } else if (my_row == pod_row+1 &amp;&amp; my_col &lt; pod_col) {
-        moveTo(my_row, my_col+1);
-    } else {
-        moveTo(my_row-1, my_col);
-        pod_returned = true;
-        pods[pod_id].status = POD_IDLE;
+    } else if (my_row == pod_row+1) {
+        // reached destination row
+        if (my_col &lt; pod_col) {
+            moveTo(my_row, my_col+1);
+        } else if (my_col == pod_col) {
+            // move up to pod home position
+            if (moveTo(my_row-1, my_col)) {
+                pod_returned = true;
+                pods[pod_id].status = POD_IDLE;
+            }
+        }
     }   
 }
 
@@ -482,7 +487,7 @@ pickTask()</label>
 		</transition>
 	</template>
 	<system>// Place template instantiations here.
-Task = TempTaskManager(5);
+Task = TempTaskManager(10);
 H = Human(5);
 //R = TempRobot();
 
