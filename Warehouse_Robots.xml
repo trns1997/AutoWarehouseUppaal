@@ -5,16 +5,16 @@
 const int numRobots = 3;
 const int numPods = 3;
 typedef int[0,numRobots-1] robot_id_t;
-typedef int[0,numPods-1] pod_id_t;
+//typedef int[0,numPods-1] pod_id_t;
 
 const int K = 2;
 const int MAX_T = 10;
 
 const int GRID_ROWS = 10;
 const int GRID_COLS = 10;
-const int EMPTY = 0;
-const int POD = 1;
-const int ROBOT = 2;
+const int EMPTY = 0;    // empty cell
+const int POD = 1;      // cell contains a pod
+const int ROBOT = 2;    // cell contains a robot
 const int POD_ROWS = (GRID_ROWS-2)/2;
 const int POD_COLS = (GRID_COLS-2);
 const int NUMPODS = POD_ROWS * POD_COLS;
@@ -90,9 +90,12 @@ int grid[GRID_ROWS][GRID_COLS] = {
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 };
 
+////////////////////////////////////////////////////////////////////////
+// Task Manager handling
+////////////////////////////////////////////////////////////////////////
+
 // Linear congruential random number generator:
 // cycle length = 255
-
 int seed;
 
 int mini_rand()
@@ -103,7 +106,7 @@ int mini_rand()
     return 1;
 }
 
-int task_queue[MAX_T];
+int task_queue[MAX_T];      // queue of pod indices
 int taskCounter = 0;        // number of tasks in task_queue
 
 // Put an element at the end of the queue
@@ -155,6 +158,7 @@ int select_random_idle_pod()
     return -1;
 }
 
+// add a new pod index to the task queue
 void add_new_task()
 {
     // 1. select random idle pod
@@ -172,16 +176,20 @@ void add_new_task()
         pods[pod].status = POD_TASK;
 }
 
-int startingPose[2] = {0, 0};
-int deliveryPose[2] = {0, 9};
-int bottomLeftPose[2] = {9, 0};
-chan robot_picked[numRobots];
-//chan pod_picked[numPods], pod_dropped[numPods];
-chan pod_picked, pod_dropped;
-chan human_finished, robot_arrived;
-int taskFromQueue;
+////////////////////////////////////////////////////////////////////////
+// Channels
+////////////////////////////////////////////////////////////////////////
 
-chan task_picked; </declaration>
+//int startingPose[2] = {0, 0};
+//int deliveryPose[2] = {0, 9};
+//int bottomLeftPose[2] = {9, 0};
+//chan robot_picked[numRobots];
+//chan pod_picked[numPods], pod_dropped[numPods];
+//chan pod_picked, pod_dropped;
+chan human_finished, robot_arrived;
+//int taskFromQueue;
+
+//chan task_picked; </declaration>
 	<template>
 		<name>TempTaskManager</name>
 		<parameter>const int T</parameter>
@@ -230,7 +238,7 @@ add_new_task()</label>
 	</template>
 	<template>
 		<name>TempRobot</name>
-		<parameter>const int K</parameter>
+		<parameter>const robot_id_t id</parameter>
 		<declaration>clock robot_clock;
 
 // robot position in the grid
@@ -240,11 +248,14 @@ int my_col = GRID_COLS-1;
 // current task
 int pod_id;
 int pod_row, pod_col;
+
+// flags
 bool pod_reached = false;
 bool delivery_reached = false;
 bool pod_returned = false;
 bool returned_to_idle = false;
 
+// pick a task from the task queue
 void pickTask()
 {
     pod_id = dequeue_task();
@@ -256,25 +267,39 @@ void pickTask()
     returned_to_idle = false;
 }
 
+bool isIdlePos(int row, int col)
+{
+    return row == GRID_ROWS-1 &amp;&amp; col == GRID_COLS-1;
+}
+
 bool moveTo(int new_row, int new_col)
 {
+    if (isIdlePos(new_row, new_col)) {
+        // @idle pos: infinite capacity
+        grid[my_row][my_col] -= ROBOT;
+        my_row = new_row;
+        my_col = new_col;
+        return true;
+    }
     if (!pod_reached || pod_returned) {
         // not carrying the pod
         if (grid[new_row][new_col] &lt; ROBOT) {
             // there is no robot in the new position
             // either it is empty or there is a pod
-            grid[my_row][my_col] -= ROBOT;
+            if (!isIdlePos(my_row, my_col))
+                grid[my_row][my_col] -= ROBOT;
             my_row = new_row;
             my_col = new_col;
             grid[my_row][my_col] += ROBOT;
             return true;
         }
     } else {
+        // carrying the pod
         if (grid[new_row][new_col] == EMPTY) {
             grid[my_row][my_col] = EMPTY;
+            grid[new_row][new_col] = ROBOT+POD;
             my_row = new_row;
             my_col = new_col;
-            grid[my_row][my_col] += ROBOT+POD;
             return true;
         }
     }
@@ -317,6 +342,7 @@ void returnToPod(){
     } else {
         moveTo(my_row-1, my_col);
         pod_returned = true;
+        pods[pod_id].status = POD_IDLE;
     }   
 }
 
@@ -357,8 +383,8 @@ void returnToIdle(){
 		<transition>
 			<source ref="id7"/>
 			<target ref="id7"/>
-			<label kind="guard" x="-1368" y="416">robot_clock&gt;=K &amp;&amp; !returned_to_idle</label>
-			<label kind="assignment" x="-1283" y="382">robot_clock=0,
+			<label kind="guard" x="-1428" y="408">robot_clock&gt;=K &amp;&amp; !returned_to_idle</label>
+			<label kind="assignment" x="-1275" y="374">robot_clock=0,
 returnToIdle()</label>
 			<nail x="-1164" y="365"/>
 			<nail x="-1164" y="433"/>
@@ -413,8 +439,8 @@ moveToDelivery()</label>
 		<transition>
 			<source ref="id3"/>
 			<target ref="id3"/>
-			<label kind="guard" x="-364" y="892">robot_clock&gt;=K &amp;&amp; !pod_reached</label>
-			<label kind="assignment" x="-364" y="909">robot_clock=0,
+			<label kind="guard" x="-382" y="892">robot_clock&gt;=K &amp;&amp; !pod_reached</label>
+			<label kind="assignment" x="-382" y="909">robot_clock=0,
 moveToPod()</label>
 			<nail x="-381" y="892"/>
 			<nail x="-305" y="892"/>
@@ -456,10 +482,10 @@ pickTask()</label>
 	<system>// Place template instantiations here.
 Task = TempTaskManager(5);
 H = Human(5);
-R = TempRobot(5);
+//R = TempRobot();
 
 // List one or more processes to be composed into a system.
-system R, Task, H;
+system TempRobot, Task, H;
     </system>
 	<queries>
 		<query>
