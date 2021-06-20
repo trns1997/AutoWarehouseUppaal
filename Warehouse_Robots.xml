@@ -96,7 +96,7 @@ int grid[GRID_ROWS][GRID_COLS] = {
 
 // Linear congruential random number generator:
 // cycle length = 255
-int seed;
+int seed = 1;
 
 int mini_rand()
 {
@@ -144,9 +144,11 @@ int count_idle_pods()
 
 int select_random_idle_pod()
 {
+    int i, pod;
     int idlepods = count_idle_pods();
-    int pod = mini_rand() % idlepods;
-    int i;
+    //int pod = mini_rand() % idlepods;
+    seed = (17 * seed + 137) &amp; 255;
+    pod = seed %  idlepods;
 
     for (i = 0; i &lt; NUMPODS; ++i) {
         if (pods[i].status == POD_IDLE) {
