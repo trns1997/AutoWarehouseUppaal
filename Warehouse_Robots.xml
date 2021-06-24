@@ -2,13 +2,11 @@
 <!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
 <nta>
 	<declaration>// Place global declarations here.
-const int numRobots = 1;
-const int numPods = 3;
+const int numRobots = 3;
 typedef int[0,numRobots-1] robot_id_t;
-//typedef int[0,numPods-1] pod_id_t;
 
-const int K = 2;
-const int MAX_T = 10;
+const int K = 1;
+const int MAX_T = 9;
 
 const int GRID_ROWS = 10;
 const int GRID_COLS = 10;
@@ -173,7 +171,6 @@ void add_new_task()
     pod = select_random_idle_pod();
 
     // 2. add pod to queue
-    
     if (enqueue_task(pod))
         pods[pod].status = POD_TASK;
 }
@@ -182,44 +179,28 @@ void add_new_task()
 // Channels
 ////////////////////////////////////////////////////////////////////////
 
-//int startingPose[2] = {0, 0};
-//int deliveryPose[2] = {0, 9};
-//int bottomLeftPose[2] = {9, 0};
-//chan robot_picked[numRobots];
-//chan pod_picked[numPods], pod_dropped[numPods];
-//chan pod_picked, pod_dropped;
-chan human_finished, robot_arrived;
-//int taskFromQueue;
-
-//chan task_picked; </declaration>
+chan human_finished, robot_arrived;</declaration>
 	<template>
 		<name>TempTaskManager</name>
-		<parameter>const int T</parameter>
-		<declaration>clock task_clock;</declaration>
+		<parameter>const int T, const int TOTAL_T</parameter>
+		<declaration>clock task_clock;
+
+int total_number_of_tasks = 0;</declaration>
 		<location id="id0" x="-374" y="-357">
 			<name x="-408" y="-416">Manage_tasks</name>
 			<label kind="invariant" x="-408" y="-399">task_clock&lt;=T</label>
 		</location>
 		<location id="id1" x="25" y="-357">
-			<name x="8" y="-416">Error</name>
-			<label kind="invariant" x="-17" y="-399">task_clock&lt;=T</label>
+			<name x="8" y="-399">Error</name>
+		</location>
+		<location id="id2" x="-374" y="-110">
+			<name x="-399" y="-93">Accept</name>
 		</location>
 		<init ref="id0"/>
 		<transition>
-			<source ref="id1"/>
-			<target ref="id0"/>
-			<label kind="guard" x="-314" y="-255">task_clock&gt;=T &amp;&amp; taskCounter &lt; MAX_T</label>
-			<label kind="assignment" x="-314" y="-238">task_clock=0,
-add_new_task()</label>
-			<nail x="-187" y="-263"/>
-		</transition>
-		<transition>
-			<source ref="id1"/>
-			<target ref="id1"/>
-			<label kind="guard" x="85" y="-425">task_clock&gt;=T &amp;&amp; taskCounter == MAX_T</label>
-			<label kind="assignment" x="136" y="-408">task_clock=0</label>
-			<nail x="127" y="-280"/>
-			<nail x="127" y="-399"/>
+			<source ref="id0"/>
+			<target ref="id2"/>
+			<label kind="guard" x="-756" y="-246">task_clock&gt;=T &amp;&amp; total_number_of_tasks == TOTAL_T</label>
 		</transition>
 		<transition>
 			<source ref="id0"/>
@@ -231,9 +212,10 @@ add_new_task()</label>
 		<transition>
 			<source ref="id0"/>
 			<target ref="id0"/>
-			<label kind="guard" x="-764" y="-399">task_clock&gt;=T &amp;&amp; taskCounter&lt;MAX_T</label>
+			<label kind="guard" x="-1037" y="-399">task_clock&gt;=T &amp;&amp; taskCounter&lt;MAX_T &amp;&amp; total_number_of_tasks &lt; TOTAL_T</label>
 			<label kind="assignment" x="-764" y="-382">task_clock=0,
-add_new_task()</label>
+add_new_task(),
+total_number_of_tasks++</label>
 			<nail x="-484" y="-408"/>
 			<nail x="-484" y="-323"/>
 		</transition>
@@ -364,32 +346,32 @@ void returnToIdle(){
         }
     }
 }</declaration>
-		<location id="id2" x="-1096" y="833">
+		<location id="id3" x="-1096" y="833">
 			<name x="-1146" y="824">Idle</name>
 		</location>
-		<location id="id3" x="-339" y="833">
+		<location id="id4" x="-339" y="833">
 			<name x="-415" y="790">Move_To_Pod</name>
 			<label kind="invariant" x="-424" y="807">robot_clock&lt;=K</label>
 		</location>
-		<location id="id4" x="-341" y="561">
+		<location id="id5" x="-341" y="561">
 			<name x="-324" y="519">Move_To_Delivery</name>
 			<label kind="invariant" x="-324" y="536">robot_clock&lt;=K</label>
 		</location>
-		<location id="id5" x="-340" y="408">
+		<location id="id6" x="-340" y="408">
 			<name x="-350" y="374">Arrived_To_Delivery</name>
 		</location>
-		<location id="id6" x="-595" y="408">
+		<location id="id7" x="-595" y="408">
 			<name x="-612" y="357">Return_To_Pod</name>
 			<label kind="invariant" x="-612" y="374">robot_clock&lt;=K</label>
 		</location>
-		<location id="id7" x="-1096" y="408">
+		<location id="id8" x="-1096" y="408">
 			<name x="-1105" y="357">Return_To_Idle</name>
 			<label kind="invariant" x="-1105" y="374">robot_clock&lt;=K</label>
 		</location>
-		<init ref="id2"/>
+		<init ref="id3"/>
 		<transition>
-			<source ref="id7"/>
-			<target ref="id7"/>
+			<source ref="id8"/>
+			<target ref="id8"/>
 			<label kind="guard" x="-1428" y="408">robot_clock&gt;=K &amp;&amp; !returned_to_idle</label>
 			<label kind="assignment" x="-1275" y="374">robot_clock=0,
 returnToIdle()</label>
@@ -397,19 +379,19 @@ returnToIdle()</label>
 			<nail x="-1164" y="433"/>
 		</transition>
 		<transition>
-			<source ref="id7"/>
-			<target ref="id2"/>
+			<source ref="id8"/>
+			<target ref="id3"/>
 			<label kind="guard" x="-1088" y="595">returned_to_idle</label>
 		</transition>
 		<transition>
-			<source ref="id6"/>
-			<target ref="id7"/>
+			<source ref="id7"/>
+			<target ref="id8"/>
 			<label kind="guard" x="-926" y="382">robot_clock &gt;= K &amp;&amp; pod_returned</label>
 			<label kind="assignment" x="-926" y="408">robot_clock=0</label>
 		</transition>
 		<transition>
-			<source ref="id6"/>
-			<target ref="id6"/>
+			<source ref="id7"/>
+			<target ref="id7"/>
 			<label kind="guard" x="-629" y="459">robot_clock&gt;=K &amp;&amp; !pod_returned</label>
 			<label kind="assignment" x="-629" y="476">returnToPod(),
 robot_clock=0</label>
@@ -417,20 +399,20 @@ robot_clock=0</label>
 			<nail x="-620" y="459"/>
 		</transition>
 		<transition>
-			<source ref="id5"/>
-			<target ref="id6"/>
+			<source ref="id6"/>
+			<target ref="id7"/>
 			<label kind="synchronisation" x="-527" y="391">human_finished?</label>
 			<label kind="assignment" x="-527" y="408">robot_clock=0</label>
 		</transition>
 		<transition>
-			<source ref="id4"/>
-			<target ref="id5"/>
+			<source ref="id5"/>
+			<target ref="id6"/>
 			<label kind="guard" x="-323" y="484">delivery_reached</label>
 			<label kind="synchronisation" x="-323" y="501">robot_arrived!</label>
 		</transition>
 		<transition>
-			<source ref="id4"/>
-			<target ref="id4"/>
+			<source ref="id5"/>
+			<target ref="id5"/>
 			<label kind="guard" x="-272" y="603">robot_clock&gt;=K &amp;&amp; !delivery_reached</label>
 			<label kind="assignment" x="-272" y="620">robot_clock=0,
 moveToDelivery()</label>
@@ -438,14 +420,14 @@ moveToDelivery()</label>
 			<nail x="-255" y="578"/>
 		</transition>
 		<transition>
-			<source ref="id3"/>
-			<target ref="id4"/>
+			<source ref="id4"/>
+			<target ref="id5"/>
 			<label kind="guard" x="-331" y="697">robot_clock&gt;=K  &amp;&amp; pod_reached</label>
 			<label kind="assignment" x="-331" y="714">robot_clock=0</label>
 		</transition>
 		<transition>
-			<source ref="id3"/>
-			<target ref="id3"/>
+			<source ref="id4"/>
+			<target ref="id4"/>
 			<label kind="guard" x="-382" y="892">robot_clock&gt;=K &amp;&amp; !pod_reached</label>
 			<label kind="assignment" x="-382" y="909">robot_clock=0,
 moveToPod()</label>
@@ -453,8 +435,8 @@ moveToPod()</label>
 			<nail x="-305" y="892"/>
 		</transition>
 		<transition>
-			<source ref="id2"/>
-			<target ref="id3"/>
+			<source ref="id3"/>
+			<target ref="id4"/>
 			<label kind="guard" x="-943" y="807">taskCounter&gt;0</label>
 			<label kind="assignment" x="-943" y="833">robot_clock=0,
 pickTask()</label>
@@ -464,31 +446,31 @@ pickTask()</label>
 		<name>Human</name>
 		<parameter>const int H</parameter>
 		<declaration>clock time_for_task;</declaration>
-		<location id="id8" x="-127" y="-297">
+		<location id="id9" x="-127" y="-297">
 			<name x="-137" y="-331">wait</name>
 		</location>
-		<location id="id9" x="-127" y="-76">
+		<location id="id10" x="-127" y="-76">
 			<name x="-161" y="-59">working</name>
 			<label kind="invariant" x="-161" y="-42">time_for_task &lt;=H</label>
 		</location>
-		<init ref="id8"/>
+		<init ref="id9"/>
 		<transition>
-			<source ref="id9"/>
-			<target ref="id8"/>
+			<source ref="id10"/>
+			<target ref="id9"/>
 			<label kind="guard" x="-408" y="-187">time_for_task &gt;= H</label>
 			<label kind="synchronisation" x="-391" y="-170">human_finished!</label>
 			<nail x="-263" y="-178"/>
 		</transition>
 		<transition>
-			<source ref="id8"/>
-			<target ref="id9"/>
+			<source ref="id9"/>
+			<target ref="id10"/>
 			<label kind="synchronisation" x="-119" y="-195">robot_arrived?</label>
 			<label kind="assignment" x="-119" y="-212">time_for_task = 0</label>
 		</transition>
 	</template>
 	<system>// Place template instantiations here.
-Task = TempTaskManager(10);
-H = Human(5);
+Task = TempTaskManager(6, 11);
+H = Human(3);
 //R = TempRobot();
 
 // List one or more processes to be composed into a system.
@@ -496,8 +478,12 @@ system TempRobot, Task, H;
     </system>
 	<queries>
 		<query>
-			<formula></formula>
+			<formula>E&lt;&gt;(Task.Accept)</formula>
 			<comment></comment>
+		</query>
+		<query>
+			<formula>A[] not(Task.Error)</formula>
+			<comment>Task queue never in error state</comment>
 		</query>
 	</queries>
 </nta>
