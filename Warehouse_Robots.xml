@@ -2,11 +2,20 @@
 <!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
 <nta>
 	<declaration>// Place global declarations here.
-const int numRobots = 3;
+
+// Num Robot # 3
+// Robot movement speed # 2
+// Rate of task # 10
+// Human Speed # 5
+// Number of tasks generated # 20
+// Size of task queue # 10
+
+const int numRobots = 6;
 typedef int[0,numRobots-1] robot_id_t;
 
-const int K = 1;
-const int MAX_T = 9;
+const int K = 2;
+const int MAX_T = 10;
+const int TOTAL_T = 20;
 
 const int GRID_ROWS = 10;
 const int GRID_COLS = 10;
@@ -179,10 +188,10 @@ void add_new_task()
 // Channels
 ////////////////////////////////////////////////////////////////////////
 
-chan human_finished, robot_arrived;</declaration>
+broadcast chan human_finished, robot_arrived;</declaration>
 	<template>
 		<name>TempTaskManager</name>
-		<parameter>const int T, const int TOTAL_T</parameter>
+		<parameter>const int T</parameter>
 		<declaration>clock task_clock;
 
 int total_number_of_tasks = 0;</declaration>
@@ -200,7 +209,7 @@ int total_number_of_tasks = 0;</declaration>
 		<transition>
 			<source ref="id0"/>
 			<target ref="id2"/>
-			<label kind="guard" x="-756" y="-246">task_clock&gt;=T &amp;&amp; total_number_of_tasks == TOTAL_T</label>
+			<label kind="guard" x="-765" y="-246">task_clock&gt;=T &amp;&amp; total_number_of_tasks == TOTAL_T</label>
 		</transition>
 		<transition>
 			<source ref="id0"/>
@@ -348,6 +357,7 @@ void returnToIdle(){
 }</declaration>
 		<location id="id3" x="-1096" y="833">
 			<name x="-1146" y="824">Idle</name>
+			<label kind="exponentialrate" x="-1106" y="867">1</label>
 		</location>
 		<location id="id4" x="-339" y="833">
 			<name x="-415" y="790">Move_To_Pod</name>
@@ -469,8 +479,8 @@ pickTask()</label>
 		</transition>
 	</template>
 	<system>// Place template instantiations here.
-Task = TempTaskManager(6, 11);
-H = Human(3);
+Task = TempTaskManager(10);
+H = Human(5);
 //R = TempRobot();
 
 // List one or more processes to be composed into a system.
@@ -478,12 +488,12 @@ system TempRobot, Task, H;
     </system>
 	<queries>
 		<query>
-			<formula>E&lt;&gt;(Task.Accept)</formula>
+			<formula>Pr[&lt;=100000;1000]([] not Task.Error)</formula>
 			<comment></comment>
 		</query>
 		<query>
-			<formula>A[] not(Task.Error)</formula>
-			<comment>Task queue never in error state</comment>
+			<formula>Pr[&lt;=100000;1000](&lt;&gt; Task.Accept)</formula>
+			<comment></comment>
 		</query>
 	</queries>
 </nta>
